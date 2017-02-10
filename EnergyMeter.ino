@@ -1,14 +1,20 @@
 //
 // include the library code:
-#include "SIM900.h"
 #include <SoftwareSerial.h>
-#include "sms.h"
+#include "src/SIMCOM.h"
+#include "src/sms.h"
 SMSGSM sms;
 int numdata;
 boolean started=false;
 #define SMS_TARGET "09297895641" //<-use your own number 
 
 #include "LiquidCrystal.h"
+
+#include <SPI.h>
+#include <SD.h>
+
+const int chipSelect = 8;
+boolean CardPresent = 0;
 
 /*The circuit:
   * LCD RS pin to digital pin 10
@@ -66,9 +72,21 @@ unsigned long Interval = 0;
 #define PA2_Serial	Serial
 #define USE_GSM 1
 
+
 void setup() {
   
   // put your setup code here, to run once:
+  if (!SD.begin(chipSelect)) 
+  {
+    CardPresent = false;
+  }
+  else 
+  {
+    CardPresent = true;
+    String logStr(F("Card is available"));
+    PrintToLog(logStr);
+  }
+  
   //SerialUSB.begin(9600);
   PA2_Serial.begin(9600);
   PA2_Serial.write(0x02);
@@ -91,7 +109,7 @@ void setup() {
   }
   else
   {
-    PA2_Serial.println("Power Meter is offline!");
+    PA2_Serial.println(F("Power Meter is offline!"));
   }
 #endif  
   previousMillis = millis();
@@ -308,3 +326,14 @@ void LCD_refresh()
     }
     k++;
 }
+
+void PrintToLog(String logString)
+{
+  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+  if (dataFile) 
+  {
+    dataFile.println(logString);
+    dataFile.close();
+  }
+}
+
