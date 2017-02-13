@@ -566,7 +566,7 @@ byte GSM::IsRxFinished(void)
 			{
 				// timeout elapsed => GSM module didn't start with response
 				// so communication is takes as finished
-				comm_buf = String(NULL);
+				comm_buf = "";
 				ret_val = RX_TMOUT_ERR;
 			}
 		}
@@ -574,7 +574,7 @@ byte GSM::IsRxFinished(void)
 		{
 			// at least one character received => so init inter-character
 			// counting process again and go to the next state
-			comm_buf = String(NULL);
+			comm_buf = "";
 			prev_time = millis();
 			rx_state = RX_ALREADY_STARTED;
 		}

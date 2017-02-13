@@ -105,7 +105,8 @@ void setup() {
   {
     started=true; 
     //Send a message to indicate successful connection
-    sms.SendSMS(SMS_TARGET, "Power Meter is now online!");
+    String hello_str(F("Power Meter is now online!"));
+    sms.SendSMS(SMS_TARGET, hello_str.begin());
   }
   else
   {
