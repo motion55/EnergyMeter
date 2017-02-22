@@ -24,7 +24,7 @@ an example of usage:
 	   GSM gsm;
 	   gsm.SendSMS("00XXXYYYYYYYYY", "SMS text");
 **********************************************************/
-char SMSGSM::SendSMS(char *number_str, char *message_str)
+char SMSGSM::SendSMS(char *number_str, const char *message_str)
 {
 	char ret_val = 0;
 	#ifdef ERROR_SERIAL
@@ -122,7 +122,7 @@ an example of usage:
 	GSM gsm;
 	gsm.SendSMS(1, "SMS text");
 **********************************************************/
-char SMSGSM::SendSMS(byte sim_phonebook_position, char *message_str)
+char SMSGSM::SendSMS(byte sim_phonebook_position, const char *message_str)
 {
 	char ret_val = -1;
 	char sim_phone_number[20];
