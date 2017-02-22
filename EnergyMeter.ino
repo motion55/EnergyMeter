@@ -68,11 +68,19 @@
   float WattHr = 0.0f;
   float PH = 0.0f;
   unsigned long Interval = 0;
+  const float peso_per_kw = 13.0f;
   
   #define PA2_Serial	Serial
-  #define USE_GSM 1
-  #define USE_SDCARD  1
+  #define USE_GSM     1
+  #define USE_SDCARD  0
+  #define USE_RTC     1
   
+#if USE_GSM  
+  const int RX_pin = 2;
+  const int TX_pin = 3;
+  const int GSM_ON_pin = 0;
+#endif  
+
 #if USE_SDCARD 
   #include <SPI.h>
   #include <SD.h>
@@ -83,6 +91,11 @@
 
   #include <Time.h>
   #include <TimeLib.h>
+  
+  char DateText[] = "02/22/2017\0";
+  //                 01234567890
+  char TimeText[] = "00:00:00a\0";
+  //                 123456789
   
   void setup() {
     
@@ -102,6 +115,11 @@
     lcd.print(F("   Billing System   "));
     lcd.setCursor(0,2);
     lcd.print(F("  By Nery And Jasa   "));
+    
+  #if USE_RTC
+    DS3231_setup();
+  #endif    
+    
   #if USE_SDCARD 
     lcd.setCursor(0,3);
     lcd.print(F(" Checking SD card..."));
@@ -118,18 +136,29 @@
       lcd.print(F("SD card init failed."));
       card_present = false;
     }
+    delay(1000);
   #endif  
-  #if USE_GSM  
+#if USE_GSM  
+    lcd.setCursor(0,3);
+    lcd.print(F(" Initializing  GSM. "));
+  #if defined(__AVR_ATmega328P__)
+    gsm.SelectSoftwareSerial(RX_pin, TX_pin, GSM_ON_pin);
+  #else
+    gsm.SelectHardwareSerial(&Serial1, GSM_ON_pin);
+  #endif
     if (gsm.begin(9600))
     {
       started=true;  
       //Send a message to indicate successful connection
       String hello(F("ADVISORY FROM NERY AND JASA'S THESIS PROJECT GSM MODULE: THIS MESSAGE IS TO INFORM YOU THAT NERY AND JASA'S POWER METER IS NOW WORKING. PLEASE DO NOT REPLY. AUTOMATED TXT ADVISORY FOR INQUIRIES TEXT OR CALL 09065069294"));
       sms.SendSMS(phone_book[DEFAULT_NUMBER], hello.c_str());
+      //sms.SendSMS(SMS_TARGET1, hello.c_str());
     }
     else
     {
       PA2_Serial.println(F("Power Meter is offline!"));
+      lcd.print(F("Initializing failed."));
+      delay(3000);
     }
   #endif  
     previousMillis = millis();
@@ -245,6 +274,9 @@
     if (currentMillis - previousMillis2 > interval2)
     {
       previousMillis2 = currentMillis;
+
+      UpdateTime();
+      
   #if USE_GSM  
       SMS();
   #endif    
@@ -284,13 +316,13 @@
             
             else if(strstr(smsbuffer,"BILL"))
             {
-              stringOne = "BILL IN PHP="+String(WattHr*13/1000,5);
+              stringOne = "BILL IN PHP="+String(WattHr*peso_per_kw/1000.0f,5);
               stringOne.toCharArray(smsbuffer,160);
               sms.SendSMS(phone_n, smsbuffer );
             }
             else if(strstr(smsbuffer,"KW"))
             {
-              stringOne = "KW-Hr="+String(WattHr/1000,4);
+              stringOne = "KW-Hr="+String(WattHr/1000.0f,5);
               stringOne.toCharArray(smsbuffer,160);
               
               sms.SendSMS(phone_n, smsbuffer );
@@ -322,10 +354,10 @@
       lcd.clear();
       lcd.setCursor(0,0);
       lcd.print(F("KW-Hr="));
-      lcd.print(String(WattHr/1000,5));
+      lcd.print(String(WattHr/1000.0f,5));
       lcd.setCursor(0,1);
       lcd.print(F("Peso="));
-      lcd.print(WattHr*100.0/1000,2);
+      lcd.print(WattHr*peso_per_kw/1000.0f,5);
       
       lcd.setCursor(0,2);
       switch (k) {
@@ -334,19 +366,63 @@
       case 0:
         lcd.print(F("Vrms="));
         lcd.print(String(Vrms,1));
-        lcd.setCursor(0,3);
+        break;
+      case 1:
         lcd.print(F("Irms="));
         lcd.print(String(Irms,2));
         break;
-      case 1:
+      case 2:
         lcd.print(F("Preal="));
         lcd.print(String(Preal,1));
-        lcd.setCursor(0,3);
+        break;
+      case 3:
         lcd.print(F("PF="));
         lcd.print(String(PF,3));
         break;
       }
       k++;
+      UpdateTime();
+  }
+
+  void UpdateTime(void)
+  {
+    time_t tm = now();
+  
+    int hour = hourFormat12(tm);
+    if (hour < 10)
+    {
+      TimeText[0] = ' ';
+      TimeText[1] = '0' + hour;
+    }
+    else
+    {
+      TimeText[0] = '1';
+      TimeText[1] = '0' + (hour - 10);
+    }
+  
+    int min = minute(tm);
+    int min10 = min / 10;
+    TimeText[3] = '0' + min10;
+    TimeText[4] = '0' + min - (min10 * 10);
+  
+    int sec = second(tm);
+    int sec10 = sec / 10;
+    TimeText[6] = '0' + sec10;
+    TimeText[7] = '0' + sec - (sec10 * 10);
+    
+    if (isAM(tm))
+    {
+      TimeText[8] = 'a';
+    }
+    else
+    {
+      TimeText[8] = 'p';
+    }
+    
+    lcd.setCursor(0,3);
+    lcd.print(DateText);
+    lcd.setCursor(11,3);
+    lcd.print(TimeText);
   }
 
   void Save2Log(String logString)
