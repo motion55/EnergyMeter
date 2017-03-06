@@ -47,10 +47,10 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Arduino\libraries\LiquidCrystal\src;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\SoftwareSerial\src;C:\Program Files (x86)\Arduino\libraries\LiquidCrystal\src\utility;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\SoftwareSerial\src\utility;C:\Program Files (x86)\Arduino\libraries;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries;C:\Users\Butch\Documents\Arduino\libraries;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\cores\arduino;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\variants\standard;C:\Users\Butch\Desktop\Arduino\Sketches\EnergyMeter;C:\Program Files (x86)\Arduino\libraries\LiquidCrystal\src;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\SoftwareSerial\src;C:\Program Files (x86)\Arduino\libraries;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries;C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\Extensions\5ndcm2qr.ak2\Micro Platforms\default\debuggers;C:\Users\Butch\Documents\Arduino\libraries;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\cores\arduino;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\variants\standard;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2/avr/include/;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2//avr/include/avr/;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2/lib\gcc\avr\4.8.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Arduino\libraries\LiquidCrystal\src;C:\Users\Butch\Documents\Arduino\libraries\Rtc_by_Makuna\src;C:\Users\Butch\Documents\Arduino\libraries\SD\src;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\SoftwareSerial\src;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\SPI\src;C:\Users\Butch\Documents\Arduino\libraries\Time;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\Wire\src;C:\Program Files (x86)\Arduino\libraries\LiquidCrystal\src\utility;C:\Users\Butch\Documents\Arduino\libraries\Rtc_by_Makuna\src\utility;C:\Users\Butch\Documents\Arduino\libraries\SD\src\utility;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\SoftwareSerial\src\utility;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\SPI\src\utility;C:\Users\Butch\Documents\Arduino\libraries\Time\utility;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\Wire\src\utility;C:\Program Files (x86)\Arduino\libraries;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries;C:\Users\Butch\Documents\Arduino\libraries;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\cores\arduino;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\variants\standard;C:\Users\Butch\Desktop\Arduino\Sketches\EnergyMeter;C:\Program Files (x86)\Arduino\libraries\LiquidCrystal\src;C:\Users\Butch\Documents\Arduino\libraries\Rtc_by_Makuna\src;C:\Users\Butch\Documents\Arduino\libraries\SD\src;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\SoftwareSerial\src;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\SPI\src;C:\Users\Butch\Documents\Arduino\libraries\Time;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries\Wire\src;C:\Program Files (x86)\Arduino\libraries;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\libraries;C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\Extensions\5ndcm2qr.ak2\Micro Platforms\default\debuggers;C:\Users\Butch\Documents\Arduino\libraries;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\cores\arduino;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.17\variants\standard;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2/avr/include/;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2//avr/include/avr/;C:\Users\Butch\AppData\Local\arduino15\packages\arduino\tools\avr-gcc\4.9.2-atmel3.5.3-arduino2/lib\gcc\avr\4.8.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>C:\Users\Butch\Desktop\Arduino\Sketches\EnergyMeter\__vm\.EnergyMeter.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
+      <PreprocessorDefinitions>__AVR_ATmega328p__;__AVR_ATmega328P__;F_CPU=16000000L;ARDUINO=10801;ARDUINO_AVR_UNO;ARDUINO_ARCH_AVR;__cplusplus=201103L;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -74,6 +74,7 @@
     <ProjectCapability Include="VisualMicro" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="DS3231.ino" />
     <None Include="EnergyMeter.ino">
       <FileType>CppCode</FileType>
     </None>
@@ -84,6 +85,7 @@
     <ClInclude Include="src\SIM900.h" />
     <ClInclude Include="src\SIMCOM.h" />
     <ClInclude Include="src\sms.h" />
+    <ClInclude Include="__vm\.EnergyMeter.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ComPort.cpp" />

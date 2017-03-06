@@ -1,4 +1,5 @@
 #include "sms.h"
+#include <TimeLib.h>
 
 /**********************************************************
 Method sends SMS
@@ -300,7 +301,8 @@ an example of usage:
 		#endif
 	   }
 **********************************************************/
-char SMSGSM::GetSMS(byte position, char *phone_number, byte max_phone_len, char *SMS_text, byte max_SMS_len)
+char SMSGSM::GetSMS(byte position, char *phone_number, byte max_phone_len, 
+					char *SMS_text, byte max_SMS_len, time_t *timestamp)
 {
 	char ret_val = -1;
 	char *p_char;
@@ -379,12 +381,40 @@ char SMSGSM::GetSMS(byte position, char *phone_number, byte max_phone_len, char 
 			len = strlen(p_char1);
 			if(len < max_phone_len)
 			{
-			  strcpy(phone_number, (char *)(p_char1));
+				strcpy(phone_number, (char *)(p_char1));
 			}
 			else
 			{
-			  memcpy(phone_number,(char *)p_char1,(max_phone_len-1));
-			  phone_number[max_phone_len]=0;
+				memcpy(phone_number,(char *)p_char1,(max_phone_len-1));
+				phone_number[max_phone_len]=0;
+			}
+
+			if (timestamp != NULL)
+			{
+				p_char = strchr(p_char + 1, '"'); //The next quote char for timestamp
+				p_char1 = p_char + 1;
+				p_char = strchr(p_char1, '"');
+				if (p_char != NULL)
+				{
+					*p_char = 0; // end of string
+					len = strlen(p_char1);
+					if (len == 22)
+					{
+						//0123456789012345678901
+						//2017/03/06,11:40:17+08
+						TimeElements tm;
+						String time_str((const char *)p_char1);
+						tm.Year = time_str.substring(0).toInt() - 1970;
+						tm.Month = time_str.substring(5).toInt();
+						tm.Day = time_str.substring(8).toInt();
+						tm.Hour = time_str.substring(11).toInt();
+						tm.Minute = time_str.substring(14).toInt();
+						tm.Second = time_str.substring(17).toInt();
+						int time_zone = time_str.substring(20).toInt();
+						time_zone *= 3600;
+						*timestamp = makeTime(tm);
+					}
+				}
 			}
 		}
 
