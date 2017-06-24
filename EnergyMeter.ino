@@ -1,7 +1,6 @@
   //
   // include the library code:
   #include "src/SIMCOM.h"
-  //#include <SoftwareSerial.h>
   #include "src/sms.h"
   SMSGSM sms;
   boolean started=false;
@@ -31,6 +30,14 @@
     */
   // initialize the library with the numbers of the interface pins
   LiquidCrystal lcd(10, 9, 7, 6, 5, 4);
+  
+  #define PA2_Serial  Serial
+  #define USE_GSM     1
+  #define USE_SDCARD  0
+  #define USE_RTC     1
+  #define USE_CREDIT  1
+  #define USE_KEYPAD  1
+  #define USE_SMART   1
   
   int i, j, k;
   long previousMillis = 0;
@@ -69,13 +76,11 @@
   float PH = 0.0f;
   unsigned long Interval = 0;
   const float peso_per_kw = 13.0f;
-  
-  #define PA2_Serial	Serial
-  #define USE_GSM     1
-  #define USE_SDCARD  0
-  #define USE_RTC     1
-  #define USE_KEYPAD  1
-
+  const int RelayPin = 8;
+#if USE_CREDIT
+  float Credit_WattHr = 100.0f;
+  float Prev_WattHr = 0.0f;
+#endif
   
 #if USE_GSM  
   const int RX_pin = 2;
@@ -160,7 +165,11 @@
       if (time_not_set) 
       {
         //Serial.println(F("Requesting load balance"));
+      #if USE_SMART
+        sms.SendSMS("214","1515");
+      #else  
         sms.SendSMS("222","BAL");
+      #endif
       }
     }
     else
@@ -172,6 +181,8 @@
   #endif  
     previousMillis = millis();
     previousMillis2 = millis();
+
+    pinMode(RelayPin, OUTPUT);
   }
   
   #define C_STX 0x02
@@ -263,6 +274,10 @@
             WattHr = sWattHr.toFloat();
             PH = sPH.toFloat();
             Interval = sInterval.toInt();
+          #if USE_CREDIT
+            Credit_WattHr -= WattHr - Prev_WattHr;
+            Prev_WattHr = WattHr;
+          #endif
           }
           break;  
         default:
@@ -375,13 +390,28 @@
   {
     lcd.clear();
     lcd.setCursor(0,0);
-    lcd.print(F("KW-Hr="));
+    lcd.print(F("Total KWH ="));
     lcd.print(String(WattHr/1000.0f,5));
+    
     lcd.setCursor(0,1);
+#if USE_CREDIT
+    lcd.print(F("Credit KWH="));
+    lcd.print(Credit_WattHr/1000.0f,5);
+    if (Credit_WattHr>0)
+    {
+      digitalWrite(RelayPin,HIGH);
+    }
+    else
+    {
+      digitalWrite(RelayPin,LOW);
+      Credit_WattHr = 0;
+    }
+#else    
     lcd.print(F("Peso="));
     lcd.print(WattHr*peso_per_kw/1000.0f,5);
-      
+#endif
     lcd.setCursor(0,2);
+#if 0
     switch (k) {
     default:
       k = 0;
@@ -403,6 +433,7 @@
       break;
     }
     k++;
+#endif    
     UpdateTime();
   }
 
