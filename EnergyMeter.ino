@@ -1,7 +1,7 @@
   //
   // include the library code:
   #include "src/SIMCOM.h"
-  #include <SoftwareSerial.h>
+  //#include <SoftwareSerial.h>
   #include "src/sms.h"
   SMSGSM sms;
   boolean started=false;
@@ -74,6 +74,8 @@
   #define USE_GSM     1
   #define USE_SDCARD  0
   #define USE_RTC     1
+  #define USE_KEYPAD  1
+
   
 #if USE_GSM  
   const int RX_pin = 2;
