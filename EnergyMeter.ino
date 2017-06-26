@@ -34,10 +34,10 @@
   #define PA2_Serial  Serial
   #define USE_GSM     1
   #define USE_SDCARD  0
-  #define USE_RTC     1
+  #define USE_RTC     0
+  #define USE_SMART   0
   #define USE_CREDIT  1
   #define USE_KEYPAD  1
-  #define USE_SMART   1
   
   int i, j, k;
   long previousMillis = 0;
@@ -77,6 +77,7 @@
   unsigned long Interval = 0;
   const float peso_per_kw = 13.0f;
   const int RelayPin = 8;
+  boolean RelayON;
 #if USE_CREDIT
   float Credit_WattHr = 100.0f;
   float Prev_WattHr = 0.0f;
@@ -106,7 +107,6 @@
   //                 123456789
   
   void setup() {
-    
     // put your setup code here, to run once:
     //SerialUSB.begin(9600);
     PA2_Serial.begin(9600);
@@ -118,11 +118,11 @@
     k = 0;
     lcd.begin(20, 4);
     lcd.setCursor(0,0);
-    lcd.print(F("    Energy Meter  "));
+    lcd.print(F("    Energy Meter    "));
     lcd.setCursor(0,1);
     lcd.print(F("   Billing System   "));
     lcd.setCursor(0,2);
-    lcd.print(F("  By Nery And Jasa   "));
+    lcd.print(F("  By Nery And Jasa  "));
     
   #if USE_RTC
     DS3231_setup();
@@ -182,7 +182,11 @@
     previousMillis = millis();
     previousMillis2 = millis();
 
+    RelayON = false;
     pinMode(RelayPin, OUTPUT);
+    digitalWrite(RelayPin,LOW);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
   }
   
   #define C_STX 0x02
@@ -275,7 +279,10 @@
             PH = sPH.toFloat();
             Interval = sInterval.toInt();
           #if USE_CREDIT
-            Credit_WattHr -= WattHr - Prev_WattHr;
+            if (WattHr>Prev_WattHr)
+            {
+              Credit_WattHr -= WattHr - Prev_WattHr;
+            }
             Prev_WattHr = WattHr;
           #endif
           }
@@ -354,16 +361,38 @@
             else if(strstr(smsbuffer,"TIMESET"))
             {
               time_not_set = false;
-              DS3231_setTime(time_stamp);
               setTime(time_stamp);
+            #if USE_RTC
+              DS3231_setTime(time_stamp);
+            #endif
             }
+            #if USE_CREDIT
+            else 
+            {
+              char *pLOAD = strstr(smsbuffer,"LOAD");
+              if(pLOAD)
+              {
+                pLOAD += 4;
+                float loadCredit = String(*pLOAD).toFloat();
+                if ((loadCredit>0)&&(loadCredit<10.0f))
+                {
+                  Credit_WattHr += loadCredit;
+                  stringOne = "Loaded"+String(loadCredit);
+                  stringOne.toCharArray(smsbuffer,160);
+                  sms.SendSMS(phone_n, smsbuffer);
+                }
+              }
+            }
+            #endif
           }
           else
           if (time_not_set)
           {
             time_not_set = false;
-            DS3231_setTime(time_stamp);
             setTime(time_stamp);
+          #if USE_RTC
+            DS3231_setTime(time_stamp);
+          #endif
           }
           sms.DeleteSMS(pos); //after reading, delete SMS
         }  
@@ -388,24 +417,30 @@
   
   void LCD_refresh()
   {
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print(F("Total KWH ="));
-    lcd.print(String(WattHr/1000.0f,5));
-    
-    lcd.setCursor(0,1);
 #if USE_CREDIT
-    lcd.print(F("Credit KWH="));
-    lcd.print(Credit_WattHr/1000.0f,5);
     if (Credit_WattHr>0)
     {
+      RelayON = true;
+      digitalWrite(LED_BUILTIN,HIGH);
       digitalWrite(RelayPin,HIGH);
     }
     else
     {
-      digitalWrite(RelayPin,LOW);
       Credit_WattHr = 0;
+      RelayON = false;
+      digitalWrite(LED_BUILTIN,LOW);
+      digitalWrite(RelayPin,LOW);
     }
+#endif
+
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print(F("Total KWH ="));
+    lcd.print(String(WattHr/1000.0f,5));
+#if USE_CREDIT
+    lcd.setCursor(0,1);
+    lcd.print(F("Credit KWH="));
+    lcd.print(Credit_WattHr/1000.0f,5);
 #else    
     lcd.print(F("Peso="));
     lcd.print(WattHr*peso_per_kw/1000.0f,5);
