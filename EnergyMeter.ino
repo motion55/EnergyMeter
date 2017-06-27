@@ -374,7 +374,7 @@
               {
                 pLOAD += 4;
                 float loadCredit = String(*pLOAD).toFloat();
-                if ((loadCredit>0)&&(loadCredit<10.0f))
+                if ((loadCredit>0)&&(loadCredit<10000.0f))
                 {
                   Credit_WattHr += loadCredit;
                   stringOne = "Loaded"+String(loadCredit);
