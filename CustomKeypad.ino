@@ -24,9 +24,18 @@ byte colPins[COLS] = {A2, A3, A4, A5}; //connect to the column pinouts of the ke
 //initialize an instance of class NewKeypad
 Keypad customKeypad = Keypad( makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS); 
 
-#if 0
+#ifndef USE_KEYPAD
+
+#include "LiquidCrystal.h"
+LiquidCrystal lcd(10, 9, 7, 6, 5, 4);
+
+String password("12345678");
+
 void setup(){
   Serial.begin(9600);
+  lcd.begin(20, 4);
+  lcd.setCursor(0,0);
+  lcd.print(F("    Hello World    "));
 }
   
 void loop(){
@@ -34,6 +43,87 @@ void loop(){
   
   if (customKey){
     Serial.print(customKey);
+    switch (customKey) {
+    case 'A':
+      if (GetPassword(password))
+      {
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print(F(" Password accepted. "));
+      }
+      else
+      {
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print(F(" Password rejected. "));
+      }
+      break;
+    case 'B':
+      break;
+    case 'C':
+      break;
+    case 'D':
+      break;
+    }
   }
 }
 #endif
+
+boolean GetPassword(String passwd) 
+{
+  String guess;
+  boolean result = false;
+  lcd.clear();
+  lcd.setCursor(0,0);
+             //01234567890123456789
+  lcd.print(F("   Enter the PIN.   "));
+  lcd.setCursor(0,1);
+  lcd.print(F("    then press #.   "));
+  lcd.setCursor(0,2);
+  char done = 0;
+  while (!done) {
+    char customKey = customKeypad.getKey();
+    if ((customKey>='0')&&(customKey<='9'))
+    {
+      guess += customKey;
+      lcd.write('*');
+      if (guess.length()>20) done = true;
+    }
+    else
+    if (customKey>='#') 
+    {
+      done = true;
+      if (guess == passwd) result = true;
+    }
+  }
+  return result;
+}
+
+float GetWattHr(void)
+{
+  String sLoad;
+  float fLoad = 0.0f;
+             //01234567890123456789
+  lcd.print(F(" Enter KWHr to load "));
+  lcd.setCursor(0,1);
+  lcd.print(F("    then press #.   "));
+  lcd.setCursor(0,2);
+  char done = 0;
+  while (!done) {
+    char customKey = customKeypad.getKey();
+    if ((customKey>='0')&&(customKey<='9'))
+    {
+      sLoad += customKey;
+      lcd.write(customKey);
+      if (sLoad.length()>20) done = true;
+    }
+    else
+    if (customKey>='#') 
+    {
+      done = true;
+      fLoad = sLoad.toInt();
+    }
+  }
+  return fLoad;
+}
+

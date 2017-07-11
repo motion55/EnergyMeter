@@ -15,24 +15,24 @@
   #include "LiquidCrystal.h"
 
   /*The circuit:
-    * LCD RS pin to digital pin 10
-    * LCD R/W pin to GND
-    * LCD Enable pin to digital pin 9
-    * LCD D4 pin to digital pin 7
-    * LCD D5 pin to digital pin 6
-    * LCD D6 pin to digital pin 5
-    * LCD D7 pin to digital pin 4
-    * LCD VSS pin to ground
-    * LCD VCC pin to 5V
-    * 10K resistor:
-    * ends to +5V and ground
-    * wiper to LCD VO pin (pin 3)
-    */
+  * LCD RS pin to digital pin 10
+  * LCD R/W pin to GND
+  * LCD Enable pin to digital pin 9
+  * LCD D4 pin to digital pin 7
+  * LCD D5 pin to digital pin 6
+  * LCD D6 pin to digital pin 5
+  * LCD D7 pin to digital pin 4
+  * LCD VSS pin to ground
+  * LCD VCC pin to 5V
+  * 10K resistor:
+  * ends to +5V and ground
+  * wiper to LCD VO pin (pin 3)
+  */
   // initialize the library with the numbers of the interface pins
   LiquidCrystal lcd(10, 9, 7, 6, 5, 4);
   
   #define PA2_Serial  Serial
-  #define USE_GSM     1
+  #define USE_GSM     0
   #define USE_SDCARD  0
   #define USE_RTC     0
   #define USE_SMART   0
@@ -95,6 +95,13 @@
 
   const int chipSelect = 8;
   boolean card_present = false;
+#endif  
+
+#if USE_KEYPAD
+#include <Keypad.h>
+String password("12345678");
+extern Keypad customKeypad; 
+boolean GetPassword(String passwd);
 #endif  
 
   #include <Time.h>
@@ -312,6 +319,34 @@
       SMS();
     #endif    
     }
+    #if USE_KEYPAD
+    char customKey = customKeypad.getKey();
+    
+    if (customKey){
+      switch (customKey) {
+      case 'A':
+        if (GetPassword(password))
+        {
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print(F(" Password accepted. "));
+        }
+        else
+        {
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print(F(" Password rejected. "));
+        }
+        break;
+      case 'B':
+        break;
+      case 'C':
+        break;
+      case 'D':
+        break;
+      }
+    }
+    #endif
   }
     
   void SMS()
