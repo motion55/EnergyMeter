@@ -9,11 +9,24 @@
   #define SMS_TARGET1 "09297895641"
   #define SMS_TARGET2 "00000000000" //spare
 
-  typedef char phone_number_t[14];
-  phone_number_t phone_book[3] = { SMS_TARGET0, SMS_TARGET1, SMS_TARGET2 };
+  #define PA2_Serial  Serial
+  #define USE_GSM     0
+  #define USE_SDCARD  0
+  #define USE_RTC     0
+  #define USE_SMART   0
+  #define USE_CREDIT  1
+  #define USE_KEYPAD  1
   
-  #include "LiquidCrystal.h"
+   typedef char phone_number_t[14];
+  phone_number_t phone_book[3] = { SMS_TARGET0, SMS_TARGET1, SMS_TARGET2 };
 
+#if USE_RTC
+  #include <Wire.h>
+  //#include <LiquidCrystal_I2C.h>
+  #include <LiquidCrystal_PCF8574.h>
+#else
+  #include "LiquidCrystal.h"
+#endif  
   /*The circuit:
   * LCD RS pin to digital pin 10
   * LCD R/W pin to GND
@@ -29,16 +42,13 @@
   * wiper to LCD VO pin (pin 3)
   */
   // initialize the library with the numbers of the interface pins
+#if defined(LiquidCrystal_I2C_h)
+  LiquidCrystal_I2C lcd(0x27,20,4);
+#elif defined(LiquidCrystal_PCF8574_h)
+  LiquidCrystal_PCF8574 lcd(0x27);
+#else   
   LiquidCrystal lcd(A0,A1,A2,A3,A4,A5);
-  
-  #define PA2_Serial  Serial
-  #define USE_GSM     0
-  #define USE_SDCARD  0
-  #define USE_RTC     0
-  #define USE_SMART   0
-  #define USE_CREDIT  1
-  #define USE_KEYPAD  1
-  
+#endif  
   int i, j, k;
   long previousMillis = 0;
   const long interval = 3000;
@@ -123,7 +133,15 @@ boolean GetPassword(String passwd);
     i = 0;
     j = 0;
     k = 0;
-    lcd.begin(20, 4);
+#if defined(LiquidCrystal_I2C_h)
+    lcd.init();
+    lcd.backlight();
+#elif defined(LiquidCrystal_PCF8574_h)
+    lcd.begin(20,4);
+    lcd.setBacklight(255);
+#else
+    lcd.begin(20,4);
+#endif    
     lcd.setCursor(0,0);
     lcd.print(F("    Energy Meter    "));
     lcd.setCursor(0,1);
