@@ -29,7 +29,7 @@
   * wiper to LCD VO pin (pin 3)
   */
   // initialize the library with the numbers of the interface pins
-  LiquidCrystal lcd(10, 9, 7, 6, 5, 4);
+  LiquidCrystal lcd(A0,A1,A2,A3,A4,A5);
   
   #define PA2_Serial  Serial
   #define USE_GSM     0
