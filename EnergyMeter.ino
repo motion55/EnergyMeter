@@ -15,7 +15,6 @@
   #define USE_SDCARD  0
   #define USE_RTC     1
   #define USE_SMART   0
-  #define USE_CREDIT  1
   #define USE_KEYPAD  1
   
    typedef char phone_number_t[14];
@@ -89,10 +88,8 @@
   const float peso_per_kw = 13.0f;
   const int RelayPin = 8;
   boolean RelayON;
-#if USE_CREDIT
-  float Credit_WattHr = 100.0f;
+  float Credit_WattHr = 0.0f;
   float Prev_WattHr = 0.0f;
-#endif
   
 #if USE_GSM  
   const int RX_pin = 2;
@@ -148,6 +145,8 @@
     
   #if USE_RTC
     DS3231_setup();
+    time_t t = DS3231_readAlarmOne();
+    Credit_WattHr = t;    
   #endif    
   
   #if USE_KEYPAD
@@ -310,13 +309,15 @@
             WattHr = sWattHr.toFloat();
             PH = sPH.toFloat();
             Interval = sInterval.toInt();
-          #if USE_CREDIT
             if (WattHr>Prev_WattHr)
             {
               Credit_WattHr -= WattHr - Prev_WattHr;
+            #if USE_RTC
+              time_t t = Credit_WattHr;
+              DS3231_saveAlarmOne(t);
+            #endif
             }
             Prev_WattHr = WattHr;
-          #endif
           }
           break;  
         default:
@@ -352,9 +353,11 @@
       case 'A':
         if (CheckPassword(password))
         {
-          float newLoad = GetWattHr();
-        #if USE_CREDIT
+          float newLoad = GetWattHr(true);
           Credit_WattHr += newLoad;
+        #if USE_RTC
+          time_t t = Credit_WattHr;
+          DS3231_saveAlarmOne(t);
         #endif
         }
         else
@@ -366,8 +369,42 @@
         }
         break;
       case 'B':
+        if (CheckPassword(password))
+        {
+          float newLoad = GetWattHr(false);
+          Credit_WattHr -= newLoad;
+          if (Credit_WattHr<0.0f) Credit_WattHr = 0.0f;
+        #if USE_RTC
+          time_t t = Credit_WattHr;
+          DS3231_saveAlarmOne(t);
+        #endif
+        }
+        else
+        {
+          lcd.clear();
+          lcd.setCursor(0,3);
+          lcd.print(F(" Password rejected. "));
+          delay(2000);
+        }
         break;
       case 'C':
+        if (CheckPassword(password))
+        {
+          Credit_WattHr = 0.0f                ;
+        #if USE_RTC
+          time_t t = Credit_WattHr;
+          DS3231_saveAlarmOne(t);
+        #endif
+        }
+        else
+        {
+          lcd.clear();
+          lcd.setCursor(0,3);
+          lcd.print(F(" Password rejected. "));
+          delay(2000);
+        }
+        break;
+      case 'D':
         if (CheckPassword(password))
         {
           String passnew = GetNewPassword();
@@ -384,8 +421,6 @@
           lcd.print(F(" Password rejected. "));
           delay(2000);
         }
-        break;
-      case 'D':
         break;
       }
     }
@@ -457,7 +492,6 @@
               DS3231_setTime(time_stamp);
             #endif
             }
-            #if USE_CREDIT
             else 
             {
               char *pLOAD = strstr(smsbuffer,"LOAD");
@@ -471,10 +505,13 @@
                   stringOne = "Loaded"+String(loadCredit);
                   stringOne.toCharArray(smsbuffer,160);
                   sms.SendSMS(phone_n, smsbuffer);
+                #if USE_RTC
+                  time_t t = Credit_WattHr;
+                  DS3231_saveAlarmOne(t);
+                #endif
                 }
               }
             }
-            #endif
           }
           else
           if (time_not_set)
@@ -508,7 +545,6 @@
   
   void LCD_refresh()
   {
-#if USE_CREDIT
     if (Credit_WattHr>0)
     {
       digitalWrite(LED_BUILTIN,HIGH);
@@ -530,19 +566,16 @@
         LCDInit();
       }
     }
-#endif
+
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print(F("Total KWH ="));
     lcd.print(String(WattHr/1000.0f,5));
-#if USE_CREDIT
+
     lcd.setCursor(0,1);
     lcd.print(F("Credit KWH="));
     lcd.print(Credit_WattHr/1000.0f,5);
-#else    
-    lcd.print(F("Peso="));
-    lcd.print(WattHr*peso_per_kw/1000.0f,5);
-#endif
+    
     lcd.setCursor(0,2);
 #if 0
     switch (k) {

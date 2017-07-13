@@ -142,14 +142,17 @@ String GetNewPassword(void)
   return passwd;
 }
 
-float GetWattHr(void)
+float GetWattHr(boolean bLoad)
 {
   String sLoad;
   float fLoad = 0.0f;
   lcd.clear();
   lcd.setCursor(0,0);
-             //01234567890123456789
-  lcd.print(F(" Enter KWHr to load "));
+               //01234567890123456789
+  if (bLoad)
+    lcd.print(F(" Enter WHr to load  "));
+  else
+    lcd.print(F(" Enter WHr to unload"));
   lcd.setCursor(0,1);
   lcd.print(F("    then press #.   "));
   lcd.setCursor(0,2);

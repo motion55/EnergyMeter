@@ -88,4 +88,20 @@ void DS3231_setTime(time_t t)
   Rtc.SetDateTime(Time);
 }
 
+void DS3231_saveAlarmOne(time_t t)
+{
+  RtcDateTime Time(t);
+  DS3231AlarmOne alarm((int)0, Time.Hour(), Time.Minute(), Time.Second(), 0);
+  Rtc.SetAlarmOne(alarm);
+}
+
+time_t DS3231_readAlarmOne(void)
+{
+  DS3231AlarmOne alarm = Rtc.GetAlarmOne();
+  tmElements_t tm;
+  tm.Second = alarm.Second();
+  tm.Minute = alarm.Minute();
+  tm.Hour = alarm.Hour();
+  return makeTime(tm);
+}
 
