@@ -7,6 +7,7 @@
 || | Demonstrates changing the keypad size and key values.
 || #
 */
+#include <EEPROM.h>
 #include <Keypad.h>
 
 const byte ROWS = 4; //four rows
@@ -69,7 +70,7 @@ void loop(){
 }
 #endif
 
-boolean GetPassword(String passwd) 
+boolean CheckPassword(String passwd) 
 {
   String guess;
   boolean result = false;
@@ -79,6 +80,10 @@ boolean GetPassword(String passwd)
   lcd.print(F("   Enter the PIN.   "));
   lcd.setCursor(0,1);
   lcd.print(F("    then press #.   "));
+#if 1  
+  lcd.setCursor(0,3);
+  lcd.print(Get_EEPROM_password());
+#endif  
   lcd.setCursor(0,2);
   char done = 0;
   while (!done) {
@@ -90,7 +95,7 @@ boolean GetPassword(String passwd)
       if (guess.length()>20) done = true;
     }
     else
-    if (customKey>='#') 
+    if (customKey=='#') 
     {
       done = true;
       if (guess == passwd) result = true;
@@ -99,10 +104,50 @@ boolean GetPassword(String passwd)
   return result;
 }
 
+String GetNewPassword(void)
+{
+  String passwd;
+  lcd.clear();
+  lcd.setCursor(0,0);
+             //01234567890123456789
+  lcd.print(F("   Enter new PIN.   "));
+  lcd.setCursor(0,1);
+  lcd.print(F("    then press #.   "));
+#if 1  
+  lcd.setCursor(0,3);
+  lcd.print(Get_EEPROM_password());
+#endif  
+  lcd.setCursor(0,2);
+  char done = 0;
+  while (!done) {
+    char customKey = customKeypad.getKey();
+    if (customKey==0) continue;
+    if ((customKey>='0')&&(customKey<='9'))
+    {
+      passwd += customKey;
+      lcd.write(customKey);
+      if (passwd.length()>20) done = true;
+    }
+    else
+    if (customKey=='#') 
+    {
+      done = true;
+    }
+    else
+    {
+      done = true;
+      passwd = "";
+    }
+  }
+  return passwd;
+}
+
 float GetWattHr(void)
 {
   String sLoad;
   float fLoad = 0.0f;
+  lcd.clear();
+  lcd.setCursor(0,0);
              //01234567890123456789
   lcd.print(F(" Enter KWHr to load "));
   lcd.setCursor(0,1);
@@ -126,4 +171,43 @@ float GetWattHr(void)
   }
   return fLoad;
 }
+
+#define PASSWORD_ADDR 0
+
+String Get_EEPROM_password(void)
+{
+  String passwd;
+  int addr = PASSWORD_ADDR; 
+  for (int i = 0; i<20; i++)
+  {
+    char Key = EEPROM.read(addr++);
+    if ((Key>='0')&&(Key<='9'))
+    {
+      passwd += Key;
+    }
+    else break;
+  }
+  return passwd;
+}
+
+void Set_EEPROM_password(String passwd)
+{
+  int len = passwd.length();
+  if (len>20) len = 20;
+  int addr = PASSWORD_ADDR; 
+  for (int i = 0; i<len; i++)
+  {
+    char Key = passwd[i];
+    if ((Key>='0')&&(Key<='9'))
+    {
+      EEPROM.update(addr++,Key);
+    }
+    else 
+    {
+      EEPROM.update(addr,0);
+      break;
+    }
+  }
+}
+
 

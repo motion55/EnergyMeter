@@ -1,3 +1,4 @@
+
   //
   // include the library code:
   #include "src/SIMCOM.h"
@@ -12,7 +13,7 @@
   #define PA2_Serial  Serial
   #define USE_GSM     0
   #define USE_SDCARD  0
-  #define USE_RTC     0
+  #define USE_RTC     1
   #define USE_SMART   0
   #define USE_CREDIT  1
   #define USE_KEYPAD  1
@@ -108,10 +109,14 @@
 #endif  
 
 #if USE_KEYPAD
-#include <Keypad.h>
-String password("12345678");
-extern Keypad customKeypad; 
-boolean GetPassword(String passwd);
+  #include <Keypad.h>
+  extern Keypad customKeypad; 
+  boolean Unlocked; 
+  String password("1234567890");
+  boolean CheckPassword(String passwd);
+  String GetNewPassword(void);
+  String Get_EEPROM_password(void);
+  void Set_EEPROM_password(String passwd);
 #endif  
 
   #include <Time.h>
@@ -133,15 +138,7 @@ boolean GetPassword(String passwd);
     i = 0;
     j = 0;
     k = 0;
-#if defined(LiquidCrystal_I2C_h)
-    lcd.init();
-    lcd.backlight();
-#elif defined(LiquidCrystal_PCF8574_h)
-    lcd.begin(20,4);
-    lcd.setBacklight(255);
-#else
-    lcd.begin(20,4);
-#endif    
+    LCDInit();
     lcd.setCursor(0,0);
     lcd.print(F("    Energy Meter    "));
     lcd.setCursor(0,1);
@@ -152,7 +149,17 @@ boolean GetPassword(String passwd);
   #if USE_RTC
     DS3231_setup();
   #endif    
-    
+  
+  #if USE_KEYPAD
+  Unlocked = false;
+  String pw_eeprom = Get_EEPROM_password();
+  if (pw_eeprom.length()>0)
+  {
+    password = pw_eeprom;    
+  }
+  //Set_EEPROM_password(password);
+  #endif    
+  
   #if USE_SDCARD 
     lcd.setCursor(0,3);
     lcd.print(F(" Checking SD card..."));
@@ -343,22 +350,40 @@ boolean GetPassword(String passwd);
     if (customKey){
       switch (customKey) {
       case 'A':
-        if (GetPassword(password))
+        if (CheckPassword(password))
         {
-          lcd.clear();
-          lcd.setCursor(0,0);
-          lcd.print(F(" Password accepted. "));
+          float newLoad = GetWattHr();
+        #if USE_CREDIT
+          Credit_WattHr += newLoad;
+        #endif
         }
         else
         {
           lcd.clear();
-          lcd.setCursor(0,0);
+          lcd.setCursor(0,3);
           lcd.print(F(" Password rejected. "));
+          delay(2000);
         }
         break;
       case 'B':
         break;
       case 'C':
+        if (CheckPassword(password))
+        {
+          String passnew = GetNewPassword();
+          if (passnew.length()>0)
+          {
+            password = passnew;
+            Set_EEPROM_password(password);
+          }
+        }
+        else
+        {
+          lcd.clear();
+          lcd.setCursor(0,3);
+          lcd.print(F(" Password rejected. "));
+          delay(2000);
+        }
         break;
       case 'D':
         break;
@@ -367,6 +392,19 @@ boolean GetPassword(String passwd);
     #endif
   }
     
+  void LCDInit()
+  {
+  #if defined(LiquidCrystal_I2C_h)
+    lcd.init();
+    lcd.backlight();
+  #elif defined(LiquidCrystal_PCF8574_h)
+    lcd.begin(20,4);
+    lcd.setBacklight(255);
+  #else
+    lcd.begin(20,4);
+  #endif    
+  }
+
   void SMS()
   {
     if(started)
@@ -473,19 +511,26 @@ boolean GetPassword(String passwd);
 #if USE_CREDIT
     if (Credit_WattHr>0)
     {
-      RelayON = true;
       digitalWrite(LED_BUILTIN,HIGH);
       digitalWrite(RelayPin,HIGH);
+      if (RelayON!=true)
+      {
+        RelayON = true;
+        LCDInit();
+      }
     }
     else
     {
       Credit_WattHr = 0;
-      RelayON = false;
       digitalWrite(LED_BUILTIN,LOW);
       digitalWrite(RelayPin,LOW);
+      if (RelayON!=false)
+      {
+        RelayON = false;
+        LCDInit();
+      }
     }
 #endif
-
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print(F("Total KWH ="));
