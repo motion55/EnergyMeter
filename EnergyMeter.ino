@@ -17,7 +17,7 @@
   #define USE_SMART   0
   #define USE_KEYPAD  1
   
-   typedef char phone_number_t[14];
+  typedef char phone_number_t[14];
   phone_number_t phone_book[3] = { SMS_TARGET0, SMS_TARGET1, SMS_TARGET2 };
 
 #if USE_RTC
@@ -356,6 +356,7 @@
           float newLoad = GetWattHr(true);
           Credit_WattHr += newLoad;
         #if USE_RTC
+          if (Credit_WattHr>86000.0f) Credit_WattHr = 86000.0f;
           time_t t = Credit_WattHr;
           DS3231_saveAlarmOne(t);
         #endif
@@ -506,6 +507,7 @@
                   stringOne.toCharArray(smsbuffer,160);
                   sms.SendSMS(phone_n, smsbuffer);
                 #if USE_RTC
+                  if (Credit_WattHr>86000.0f) Credit_WattHr = 86000.0f;
                   time_t t = Credit_WattHr;
                   DS3231_saveAlarmOne(t);
                 #endif
@@ -600,7 +602,7 @@
     }
     k++;
 #endif    
-    UpdateTime();
+	UpdateTime();
   }
 
   void UpdateTime(void)
