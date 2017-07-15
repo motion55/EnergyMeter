@@ -21,11 +21,12 @@
   #define PesoPerWatt 2.5f
 
 #if USE_REPORT
-  #define REPORT_HOUR 16
-  #define REPORT_MIN  35
+  #define REPORT_HOUR 17
+  #define REPORT_MIN  27
   #define REPORT_SEC  00
 
   char send_report;
+  char report_sent;
 #endif
   
   typedef char phone_number_t[14];
@@ -128,6 +129,7 @@
 #endif  
 
   #include <Time.h>
+  #include <TimeAlarms.h>
   
   extern boolean time_not_set;
   
@@ -233,6 +235,8 @@
     digitalWrite(RelayPin,LOW);
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
+    
+    Alarm.alarmRepeat(REPORT_HOUR,REPORT_MIN,REPORT_SEC,DailyReport);
   }
   
   #define C_STX 0x02
@@ -360,6 +364,7 @@
       SMS();
     #endif    
     }
+    
     #if USE_KEYPAD
     char customKey = customKeypad.getKey();
     
@@ -432,6 +437,8 @@
       }
     }
     #endif
+    
+    Alarm.delay(20);
   }
     
   void LCDInit()
@@ -754,5 +761,10 @@
     lcd.setCursor(0,2);
     lcd.print(F(" Password rejected. "));
     delay(2000);
+  }
+
+  void DailyReport(void)
+  {
+    send_report = 0xFF;
   }
 
