@@ -21,12 +21,15 @@
   #define PesoPerWatt 2.5f
 
 #if USE_REPORT
-  #define REPORT_HOUR 17
-  #define REPORT_MIN  27
+  #define REPORT_HOUR 18
+  #define REPORT_MIN  45
   #define REPORT_SEC  00
 
   char send_report;
   char report_sent;
+  
+  char ReportHours = REPORT_HOUR;
+  char ReportMins = REPORT_MIN;
 #endif
   
   typedef char phone_number_t[14];
@@ -100,13 +103,14 @@
   const float peso_per_kw = 13.0f;
   const int RelayPin = 8;
   boolean RelayON;
+  float Total_WattHr = 0.0f;
   float Credit_WattHr = 0.0f;
   float Prev_WattHr = 0.0f;
   
 #if USE_GSM  
   const int RX_pin = 2;
   const int TX_pin = 3;
-  const int GSM_ON_pin = A3;
+  const int GSM_ON_pin = 0;
 #endif  
 
 #if USE_SDCARD 
@@ -129,7 +133,6 @@
 #endif  
 
   #include <Time.h>
-  #include <TimeAlarms.h>
   
   extern boolean time_not_set;
   
@@ -141,10 +144,6 @@
   void setup() {
     // put your setup code here, to run once:
     //SerialUSB.begin(9600);
-    PA2_Serial.begin(9600);
-    PA2_Serial.write(0x02);
-    PA2_Serial.print(F("M2"));
-    PA2_Serial.write(0x03);
     i = 0;
     j = 0;
     k = 0;
@@ -236,7 +235,10 @@
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     
-    Alarm.alarmRepeat(REPORT_HOUR,REPORT_MIN,REPORT_SEC,DailyReport);
+    PA2_Serial.begin(9600);
+    PA2_Serial.write(0x02);
+    PA2_Serial.print(F("M2"));
+    PA2_Serial.write(0x03);
   }
   
   #define C_STX 0x02
@@ -330,7 +332,9 @@
             Interval = sInterval.toInt();
             if (WattHr>Prev_WattHr)
             {
-              Credit_WattHr -= WattHr - Prev_WattHr;
+              float delta = WattHr - Prev_WattHr;
+              Credit_WattHr -= delta;
+              Total_WattHr += delta;
             #if USE_RTC
               time_t t = Credit_WattHr;
               DS3231_saveAlarmOne(t);
@@ -437,8 +441,6 @@
       }
     }
     #endif
-    
-    Alarm.delay(20);
   }
     
   void LCDInit()
@@ -463,10 +465,9 @@
       { 
         char smsbuffer[160];
         char phone_n[20];
-        time_t time_stamp;
         
         //Read if there are messages on SIM card and print them.
-        if(sms.GetSMS(pos, phone_n, 20, smsbuffer, 160, &time_stamp))
+        if(sms.GetSMS(pos, phone_n, 20, smsbuffer, 160))
         {
           if (CheckPhonebook(String(phone_n)))
           {
@@ -487,33 +488,47 @@
             }
             else if(strstr(smsbuffer,"BILL"))
             {
-              stringOne = "BILL IN PHP="+String(WattHr*peso_per_kw/1000.0f,5);
+              stringOne = "BILL IN PHP="+String(Total_WattHr*peso_per_kw/1000.0f,5);
               stringOne.toCharArray(smsbuffer,160);
               sms.SendSMS(phone_n, smsbuffer );
             }
             else if(strstr(smsbuffer,"KW"))
             {
-              stringOne = "KW-Hr="+String(WattHr/1000.0f,5);
+              stringOne = "KW-Hr="+String(Total_WattHr/1000.0f,5);
               stringOne.toCharArray(smsbuffer,160);
               
               sms.SendSMS(phone_n, smsbuffer );
             }
-            else if(strstr(smsbuffer,"TIMESET"))
-            {
-              time_not_set = false;
-              setTime(time_stamp);
-            #if USE_RTC
-              DS3231_setTime(time_stamp);
-            #endif
-            }
             else if(strstr(smsbuffer,"REPORT"))
             {
-              send_report = 0xFF;  
-              #if 1
-                 lcd.setCursor(0,2);
-                 lcd.print(stringOne);
-                 lcd.print(F("     "));
-               #endif
+            char *pReport = strstr(smsbuffer,"REPORT");
+            #if 1
+              lcd.setCursor(0,2);
+              lcd.print(pReport);
+              delay(1000);
+            #endif
+            #if 1              
+              pReport += 6;
+              String sHour(pReport);
+              if (sHour.length()==5)
+              {
+                if (sHour[2]==':')
+                {
+                  ReportHours = sHour.toInt();
+                  pReport += 3;
+                  String sMin(pReport);
+                  ReportMins = sMin.toInt();
+                  stringOne = "Daily Report Hour="+String(ReportHours)+"Minute="+String(ReportMins);
+                  stringOne.toCharArray(smsbuffer,160);
+                  sms.SendSMS(phone_n, stringOne.c_str());
+                }
+              }
+              else
+            #endif
+              {
+                send_report = 0xFF;
+              }
+              report_sent = 0;
             }
             else 
             {
@@ -563,15 +578,6 @@
               }
             }
           }
-//          else
-//          if (time_not_set)
-//          {
-//            time_not_set = false;
-//            setTime(time_stamp);
-//          #if USE_RTC
-//            DS3231_setTime(time_stamp);
-//          #endif
-//          }
           sms.DeleteSMS(pos); //after reading, delete SMS
         }  
       }
@@ -580,14 +586,15 @@
         if (send_report)
         {
           send_report = 0;
-          char smsbuffer[160];
-          String stringOne = "KW-Hr="+String(WattHr/1000.0f,5);
-          float usage = WattHr * PesoPerWatt;
-          stringOne += " Pesos="+String(usage,2);
+          report_sent = 0xFF;
           lcd.setCursor(0,2);
-          lcd.print(F("Sending daily report..."));
-          stringOne.toCharArray(smsbuffer,160);
-          sms.SendSMS(phone_book[DEFAULT_NUMBER], smsbuffer);
+          lcd.print(F("Sending report..."));
+          //char smsbuffer[160];
+          String stringOne = "KW-Hr="+String(Total_WattHr/1000.0f,5);
+          float usage = Total_WattHr * PesoPerWatt;
+          stringOne += " Pesos="+String(usage,2);
+          //stringOne.toCharArray(smsbuffer,160);
+          //sms.SendSMS(phone_book[DEFAULT_NUMBER], stringOne.c_str());
           WattHr = 0.0f;
         }
       }
@@ -732,6 +739,8 @@
     lcd.print(DateText);
     lcd.setCursor(11,3);
     lcd.print(TimeText);
+
+    //DailyReport();
   }
 
   void Save2Log(String logString)
@@ -765,6 +774,24 @@
 
   void DailyReport(void)
   {
-    send_report = 0xFF;
+    time_t tm = now();
+    
+    if (hour(tm)==ReportHours)
+    {
+      if (minute(tm)>=ReportMins)
+      {
+        if (!report_sent) send_report = 0xFF;
+      }
+      else
+      {
+        send_report = 0;
+        report_sent = 0;
+      }
+    }
+    else
+    {
+      send_report = 0;
+      report_sent = 0;
+    }
   }
 
