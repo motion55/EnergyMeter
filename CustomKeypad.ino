@@ -80,7 +80,7 @@ boolean CheckPassword(String passwd)
   lcd.print(F("   Enter the PIN.   "));
   lcd.setCursor(0,1);
   lcd.print(F("    then press #.   "));
-#if 1  
+#if 0  
   lcd.setCursor(0,3);
   lcd.print(Get_EEPROM_password());
 #endif  
@@ -207,10 +207,11 @@ void Set_EEPROM_password(String passwd)
     }
     else 
     {
-      EEPROM.update(addr,0);
+      EEPROM.update(addr++,0xFF);
       break;
     }
   }
+  EEPROM.update(addr,0xFF);
 }
 
 

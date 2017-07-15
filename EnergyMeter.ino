@@ -5,17 +5,28 @@
   #include "src/sms.h"
   SMSGSM sms;
   boolean started=false;
-  #define DEFAULT_NUMBER  1 // 0 or 1
+  #define DEFAULT_NUMBER  0 // 0 or 1
   #define SMS_TARGET0 "09065069294" //<-use your own number 
   #define SMS_TARGET1 "09297895641"
   #define SMS_TARGET2 "00000000000" //spare
 
   #define PA2_Serial  Serial
-  #define USE_GSM     0
+  #define USE_GSM     1
   #define USE_SDCARD  0
   #define USE_RTC     1
   #define USE_SMART   0
   #define USE_KEYPAD  1
+  #define USE_REPORT  1
+
+  #define PesoPerWatt 2.5f
+
+#if USE_REPORT
+  #define REPORT_HOUR 16
+  #define REPORT_MIN  35
+  #define REPORT_SEC  00
+
+  char send_report;
+#endif
   
   typedef char phone_number_t[14];
   phone_number_t phone_book[3] = { SMS_TARGET0, SMS_TARGET1, SMS_TARGET2 };
@@ -117,7 +128,7 @@
 #endif  
 
   #include <Time.h>
-
+  
   extern boolean time_not_set;
   
   char DateText[] = "02/22/2017 \0";
@@ -156,7 +167,7 @@
   {
     password = pw_eeprom;    
   }
-  //Set_EEPROM_password(password);
+  Set_EEPROM_password(password);
   #endif    
   
   #if USE_SDCARD 
@@ -192,6 +203,9 @@
       String hello(F("ADVISORY FROM NERY AND JASA'S THESIS PROJECT GSM MODULE: THIS MESSAGE IS TO INFORM YOU THAT NERY AND JASA'S POWER METER IS NOW WORKING. PLEASE DO NOT REPLY. AUTOMATED TXT ADVISORY FOR INQUIRIES TEXT OR CALL 09065069294"));
       sms.SendSMS(phone_book[DEFAULT_NUMBER], hello.c_str());
       //sms.SendSMS(SMS_TARGET1, hello.c_str());
+  #if USE_RTC
+      time_not_set = false;
+  #else
       time_not_set = true;
       if (time_not_set) 
       {
@@ -202,6 +216,7 @@
         sms.SendSMS("222","BAL");
       #endif
       }
+  #endif
     }
     else
     {
@@ -382,10 +397,7 @@
         }
         else
         {
-          lcd.clear();
-          lcd.setCursor(0,3);
-          lcd.print(F(" Password rejected. "));
-          delay(2000);
+          LCD_PIN_reject();
         }
         break;
       case 'C':
@@ -399,10 +411,7 @@
         }
         else
         {
-          lcd.clear();
-          lcd.setCursor(0,3);
-          lcd.print(F(" Password rejected. "));
-          delay(2000);
+          LCD_PIN_reject();
         }
         break;
       case 'D':
@@ -417,10 +426,7 @@
         }
         else
         {
-          lcd.clear();
-          lcd.setCursor(0,3);
-          lcd.print(F(" Password rejected. "));
-          delay(2000);
+          LCD_PIN_reject();
         }
         break;
       }
@@ -493,17 +499,31 @@
               DS3231_setTime(time_stamp);
             #endif
             }
+            else if(strstr(smsbuffer,"REPORT"))
+            {
+              send_report = 0xFF;  
+              #if 1
+                 lcd.setCursor(0,2);
+                 lcd.print(stringOne);
+                 lcd.print(F("     "));
+               #endif
+            }
             else 
             {
               char *pLOAD = strstr(smsbuffer,"LOAD");
               if(pLOAD)
               {
                 pLOAD += 4;
-                float loadCredit = String(*pLOAD).toFloat();
-                if ((loadCredit>0)&&(loadCredit<10000.0f))
+                int loadCredit = String(pLOAD).toInt();
+                if ((loadCredit>0)&&(loadCredit<10000))
                 {
                   Credit_WattHr += loadCredit;
                   stringOne = "Loaded"+String(loadCredit);
+                #if 1
+                  lcd.setCursor(0,2);
+                  lcd.print(stringOne);
+                  lcd.print(F("     "));
+                #endif
                   stringOne.toCharArray(smsbuffer,160);
                   sms.SendSMS(phone_n, smsbuffer);
                 #if USE_RTC
@@ -513,19 +533,56 @@
                 #endif
                 }
               }
+              else
+              {
+                char *pPIN = strstr(smsbuffer,"PIN");
+                if(pPIN)
+                {
+                  pPIN += 3;
+                  String passnew(pPIN);
+                  if (passnew.length()>0)
+                  {
+                    stringOne = "New PIN:"+passnew;
+                  #if 1
+                    lcd.setCursor(0,2);
+                    lcd.print(F("PIN was changed."));
+                  #endif
+                    stringOne.toCharArray(smsbuffer,160);
+                    sms.SendSMS(phone_n, smsbuffer);
+                    password = passnew;
+                    Set_EEPROM_password(password);
+                  }
+                }
+              }
             }
           }
-          else
-          if (time_not_set)
-          {
-            time_not_set = false;
-            setTime(time_stamp);
-          #if USE_RTC
-            DS3231_setTime(time_stamp);
-          #endif
-          }
+//          else
+//          if (time_not_set)
+//          {
+//            time_not_set = false;
+//            setTime(time_stamp);
+//          #if USE_RTC
+//            DS3231_setTime(time_stamp);
+//          #endif
+//          }
           sms.DeleteSMS(pos); //after reading, delete SMS
         }  
+      }
+      else
+      {
+        if (send_report)
+        {
+          send_report = 0;
+          char smsbuffer[160];
+          String stringOne = "KW-Hr="+String(WattHr/1000.0f,5);
+          float usage = WattHr * PesoPerWatt;
+          stringOne += " Pesos="+String(usage,2);
+          lcd.setCursor(0,2);
+          lcd.print(F("Sending daily report..."));
+          stringOne.toCharArray(smsbuffer,160);
+          sms.SendSMS(phone_book[DEFAULT_NUMBER], smsbuffer);
+          WattHr = 0.0f;
+        }
       }
     }
   }
@@ -602,7 +659,7 @@
     }
     k++;
 #endif    
-	UpdateTime();
+    UpdateTime();
   }
 
   void UpdateTime(void)
@@ -689,5 +746,13 @@
       }
     }
   #endif
+  }
+  
+  void LCD_PIN_reject(void)
+  {
+    lcd.clear();
+    lcd.setCursor(0,2);
+    lcd.print(F(" Password rejected. "));
+    delay(2000);
   }
 
