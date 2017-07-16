@@ -66,9 +66,9 @@
 #endif  
   int i, j, k;
   long previousMillis = 0;
-  const long interval = 3000;
+  const long period1 = 3000;
   long previousMillis2 = 0;
-  const long interval2 = 1000;
+  const long period2 = 1000;
   
   char data[100];
   
@@ -236,9 +236,7 @@
     digitalWrite(LED_BUILTIN, LOW);
     
     PA2_Serial.begin(9600);
-    PA2_Serial.write(0x02);
-    PA2_Serial.print(F("M2"));
-    PA2_Serial.write(0x03);
+    PA2_start();
   }
   
   #define C_STX 0x02
@@ -300,7 +298,7 @@
   
   void loop() {
    // put your main code here, to run repeatedly:
-    while(PA2_Serial.available())
+    while (PA2_Serial.available()>0)
     {
       char c = PA2_Serial.read();
       //SerialUSB.write(c);
@@ -352,13 +350,13 @@
     } 
    
     unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis > interval)
+    if (currentMillis - previousMillis > period1)
     {
       previousMillis = currentMillis;
       LCD_refresh();
     }
-    else
-    if (currentMillis - previousMillis2 > interval2)
+    //else
+    if (currentMillis - previousMillis2 > period2)
     {
       previousMillis2 = currentMillis;
 
@@ -503,26 +501,29 @@
               lcd.print(pReport);
               delay(1000);
             #endif
-            #if 1              
               pReport += 6;
               String sHour(pReport);
               if (sHour.length()>=5)
               {
                 if (sHour[2]==':')
                 {
-                  ReportHours = sHour.toInt();
+                  int tempHour = sHour.toInt();
                   pReport += 3;
                   String sMin(pReport);
-                  ReportMins = sMin.toInt();
-                  String stringOne = "Daily Report Hour="+String((int)ReportHours);
-                  String stringTwo = " Minute="+String((int)ReportMins);
-                  stringOne.concat(stringTwo);
-                  stringOne.toCharArray(smsbuffer,160);
-                  sms.SendSMS(phone_n, smsbuffer);
+                  int tempMin = sMin.toInt();
+                  if ((tempHour<24)&&(tempMin<60))
+                  {
+                    ReportHours = tempHour;
+                    ReportMins = tempMin;
+                    String stringOne = "Daily Report Hour="+String((int)ReportHours);
+                    String stringTwo = " Minute="+String((int)ReportMins);
+                    stringOne.concat(stringTwo);
+                    stringOne.toCharArray(smsbuffer,160);
+                    sms.SendSMS(phone_n, smsbuffer);
+                  }
                 }
               }
               else
-            #endif
               {
                 send_report = 0xFF;
               }
@@ -595,6 +596,7 @@
           stringOne.toCharArray(smsbuffer,160);
           sms.SendSMS(phone_book[DEFAULT_NUMBER],smsbuffer);
           Total_WattHr = 0.0f;
+          PA2_reset();
         }
       }
     }
@@ -620,21 +622,22 @@
     if (Credit_WattHr>0)
     {
       digitalWrite(LED_BUILTIN,HIGH);
-      digitalWrite(RelayPin,HIGH);
       if (RelayON!=true)
       {
         RelayON = true;
+        digitalWrite(RelayPin,HIGH);
         LCDInit();
+        PA2_start();
       }
     }
     else
     {
       Credit_WattHr = 0;
       digitalWrite(LED_BUILTIN,LOW);
-      digitalWrite(RelayPin,LOW);
       if (RelayON!=false)
       {
         RelayON = false;
+        digitalWrite(RelayPin,LOW);
         LCDInit();
       }
     }
@@ -766,14 +769,27 @@
       }
       else
       {
-        send_report = 0;
         report_sent = 0;
       }
     }
     else
     {
-      send_report = 0;
       report_sent = 0;
     }
   }
+
+  void PA2_start(void)
+  {
+    PA2_Serial.write(0x02);
+    PA2_Serial.print(F("M3"));
+    PA2_Serial.write(0x03);
+  }
+  
+  void PA2_reset(void)
+  {
+    PA2_Serial.write(0x02);
+    PA2_Serial.print(F("R"));
+    PA2_Serial.write(0x03);
+  }
+  
 
