@@ -5,7 +5,7 @@
   #include "src/sms.h"
   SMSGSM sms;
   boolean started=false;
-  #define DEFAULT_NUMBER  1 // 0 or 1
+  #define DEFAULT_NUMBER  0 // 0 or 1
   #define SMS_TARGET0 "09065069294" //<-use your own number 
   #define SMS_TARGET1 "09297895641"
   #define SMS_TARGET2 "00000000000" //spare
@@ -66,7 +66,7 @@
 #endif  
   int i, j, k;
   long previousMillis = 0;
-  const long period1 = 3000;
+  const long period1 = 5000;
   long previousMillis2 = 0;
   const long period2 = 1000;
   
@@ -339,6 +339,7 @@
             #endif
             }
             Prev_WattHr = WattHr;
+            PA2_stop();
           }
           break;  
         default:
@@ -354,6 +355,7 @@
     {
       previousMillis = currentMillis;
       LCD_refresh();
+      PA2_start();
     }
     //else
     if (currentMillis - previousMillis2 > period2)
