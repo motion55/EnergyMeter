@@ -236,7 +236,7 @@
     digitalWrite(LED_BUILTIN, LOW);
     
     PA2_Serial.begin(9600);
-    PA2_start();
+    PA2_stop();
   }
   
   #define C_STX 0x02
@@ -616,30 +616,16 @@
     }
     return false;
   }
+
+  char bRestart;
   
   void LCD_refresh()
   {
-    if (Credit_WattHr>0)
+    if (bRestart)
     {
-      digitalWrite(LED_BUILTIN,HIGH);
-      if (RelayON!=true)
-      {
-        RelayON = true;
-        digitalWrite(RelayPin,HIGH);
-        LCDInit();
-        PA2_start();
-      }
-    }
-    else
-    {
-      Credit_WattHr = 0;
-      digitalWrite(LED_BUILTIN,LOW);
-      if (RelayON!=false)
-      {
-        RelayON = false;
-        digitalWrite(RelayPin,LOW);
-        LCDInit();
-      }
+      bRestart = 0;
+      gsm.begin(9600);
+      LCDInit();
     }
 
     lcd.clear();
@@ -659,6 +645,29 @@
     lcd.print(stringOne);
 #endif    
     UpdateTime();
+    
+    if (Credit_WattHr>0)
+    {
+      digitalWrite(LED_BUILTIN,HIGH);
+      if (RelayON!=true)
+      {
+        RelayON = true;
+        digitalWrite(RelayPin,HIGH);
+        PA2_start();
+        bRestart = 0xFF;
+      }
+    }
+    else
+    {
+      Credit_WattHr = 0;
+      digitalWrite(LED_BUILTIN,LOW);
+      if (RelayON!=false)
+      {
+        RelayON = false;
+        digitalWrite(RelayPin,LOW);
+        bRestart = 0xFF;
+      }
+    }
   }
 
   void UpdateTime(void)
@@ -779,6 +788,13 @@
   }
 
   void PA2_start(void)
+  {
+    PA2_Serial.write(0x02);
+    PA2_Serial.print(F("M2"));
+    PA2_Serial.write(0x03);
+  }
+  
+  void PA2_stop(void)
   {
     PA2_Serial.write(0x02);
     PA2_Serial.print(F("M3"));
