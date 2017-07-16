@@ -27,14 +27,15 @@ Keypad customKeypad = Keypad( makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS
 
 #ifndef USE_KEYPAD
 
-#include "LiquidCrystal.h"
-LiquidCrystal lcd(10, 9, 7, 6, 5, 4);
+#include <Wire.h>
+#include <LiquidCrystal_PCF8574.h>
+LiquidCrystal_PCF8574 lcd(0x27);
 
 String password("12345678");
 
 void setup(){
   Serial.begin(9600);
-  lcd.begin(20, 4);
+  lcd.begin(20,4);
   lcd.setCursor(0,0);
   lcd.print(F("    Hello World    "));
 }

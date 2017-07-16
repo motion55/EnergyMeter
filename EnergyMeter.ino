@@ -5,7 +5,7 @@
   #include "src/sms.h"
   SMSGSM sms;
   boolean started=false;
-  #define DEFAULT_NUMBER  0 // 0 or 1
+  #define DEFAULT_NUMBER  1 // 0 or 1
   #define SMS_TARGET0 "09065069294" //<-use your own number 
   #define SMS_TARGET1 "09297895641"
   #define SMS_TARGET2 "00000000000" //spare
@@ -21,8 +21,8 @@
   #define PesoPerWatt 2.5f
 
 #if USE_REPORT
-  #define REPORT_HOUR 18
-  #define REPORT_MIN  45
+  #define REPORT_HOUR 10
+  #define REPORT_MIN  28
   #define REPORT_SEC  00
 
   char send_report;
@@ -110,7 +110,7 @@
 #if USE_GSM  
   const int RX_pin = 2;
   const int TX_pin = 3;
-  const int GSM_ON_pin = 0;
+  const int GSM_ON_pin = A3;
 #endif  
 
 #if USE_SDCARD 
@@ -471,37 +471,33 @@
         {
           if (CheckPhonebook(String(phone_n)))
           {
-            String stringOne;
-            String stringTwo;
-            
             if(strstr(smsbuffer,"POWER"))
             {
-              stringOne = "Preal="+String(Preal,1);
+              String stringOne = "Preal="+String(Preal,1);
               stringOne.toCharArray(smsbuffer,160);
               sms.SendSMS(phone_n, smsbuffer );
             }
             else if(strstr(smsbuffer,"VOLTS"))
             {
-              stringOne = "Vrms="+String(Vrms,1);
+              String stringOne = "Vrms="+String(Vrms,1);
               stringOne.toCharArray(smsbuffer,160);
               sms.SendSMS(phone_n, smsbuffer );
             }
             else if(strstr(smsbuffer,"BILL"))
             {
-              stringOne = "BILL IN PHP="+String(Total_WattHr*peso_per_kw/1000.0f,5);
+              String stringOne = "BILL IN PHP="+String(Total_WattHr*peso_per_kw/1000.0f,5);
               stringOne.toCharArray(smsbuffer,160);
-              sms.SendSMS(phone_n, smsbuffer );
+              sms.SendSMS(phone_n, smsbuffer);
             }
             else if(strstr(smsbuffer,"KW"))
             {
-              stringOne = "KW-Hr="+String(Total_WattHr/1000.0f,5);
+              String stringOne = "KW-Hr="+String(Total_WattHr/1000.0f,5);
               stringOne.toCharArray(smsbuffer,160);
-              
-              sms.SendSMS(phone_n, smsbuffer );
+              sms.SendSMS(phone_n, smsbuffer);
             }
             else if(strstr(smsbuffer,"REPORT"))
             {
-            char *pReport = strstr(smsbuffer,"REPORT");
+              char *pReport = strstr(smsbuffer,"REPORT");
             #if 1
               lcd.setCursor(0,2);
               lcd.print(pReport);
@@ -510,7 +506,7 @@
             #if 1              
               pReport += 6;
               String sHour(pReport);
-              if (sHour.length()==5)
+              if (sHour.length()>=5)
               {
                 if (sHour[2]==':')
                 {
@@ -518,9 +514,11 @@
                   pReport += 3;
                   String sMin(pReport);
                   ReportMins = sMin.toInt();
-                  stringOne = "Daily Report Hour="+String(ReportHours)+"Minute="+String(ReportMins);
+                  String stringOne = "Daily Report Hour="+String((int)ReportHours);
+                  String stringTwo = " Minute="+String((int)ReportMins);
+                  stringOne.concat(stringTwo);
                   stringOne.toCharArray(smsbuffer,160);
-                  sms.SendSMS(phone_n, stringOne.c_str());
+                  sms.SendSMS(phone_n, smsbuffer);
                 }
               }
               else
@@ -540,7 +538,7 @@
                 if ((loadCredit>0)&&(loadCredit<10000))
                 {
                   Credit_WattHr += loadCredit;
-                  stringOne = "Loaded"+String(loadCredit);
+                  String stringOne = "Loaded"+String(loadCredit);
                 #if 1
                   lcd.setCursor(0,2);
                   lcd.print(stringOne);
@@ -564,7 +562,7 @@
                   String passnew(pPIN);
                   if (passnew.length()>0)
                   {
-                    stringOne = "New PIN:"+passnew;
+                    String stringOne = "New PIN:"+passnew;
                   #if 1
                     lcd.setCursor(0,2);
                     lcd.print(F("PIN was changed."));
@@ -589,13 +587,14 @@
           report_sent = 0xFF;
           lcd.setCursor(0,2);
           lcd.print(F("Sending report..."));
-          //char smsbuffer[160];
-          String stringOne = "KW-Hr="+String(Total_WattHr/1000.0f,5);
+          char smsbuffer[160];
           float usage = Total_WattHr * PesoPerWatt;
-          stringOne += " Pesos="+String(usage,2);
-          //stringOne.toCharArray(smsbuffer,160);
-          //sms.SendSMS(phone_book[DEFAULT_NUMBER], stringOne.c_str());
-          WattHr = 0.0f;
+          String stringOne = String(F("KW-Hr="))+String(Total_WattHr/1000.0f,5);
+          String stringTwo = String(F(" Pesos="))+String(usage,2);
+          stringOne.concat(stringTwo);
+          stringOne.toCharArray(smsbuffer,160);
+          sms.SendSMS(phone_book[DEFAULT_NUMBER],smsbuffer);
+          Total_WattHr = 0.0f;
         }
       }
     }
@@ -643,7 +642,7 @@
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print(F("Total KWH ="));
-    lcd.print(String(WattHr/1000.0f,5));
+    lcd.print(String(Total_WattHr/1000.0f,5));
 
     lcd.setCursor(0,1);
     lcd.print(F("Credit KWH="));
@@ -651,27 +650,10 @@
     
     lcd.setCursor(0,2);
 #if 0
-    switch (k) {
-    default:
-      k = 0;
-    case 0:
-      lcd.print(F("Vrms="));
-      lcd.print(String(Vrms,1));
-      break;
-    case 1:
-      lcd.print(F("Irms="));
-      lcd.print(String(Irms,2));
-      break;
-    case 2:
-      lcd.print(F("Preal="));
-      lcd.print(String(Preal,1));
-      break;
-    case 3:
-      lcd.print(F("PF="));
-      lcd.print(String(PF,3));
-      break;
-    }
-    k++;
+    String stringOne = "Hour="+String((int)ReportHours);
+    String stringTwo = " Min="+String((int)ReportMins);
+    stringOne.concat(stringTwo);
+    lcd.print(stringOne);
 #endif    
     UpdateTime();
   }
@@ -740,7 +722,7 @@
     lcd.setCursor(11,3);
     lcd.print(TimeText);
 
-    //DailyReport();
+    DailyReport();
   }
 
   void Save2Log(String logString)
@@ -778,7 +760,7 @@
     
     if (hour(tm)==ReportHours)
     {
-      if (minute(tm)>=ReportMins)
+      if (minute(tm)==ReportMins)
       {
         if (!report_sent) send_report = 0xFF;
       }
