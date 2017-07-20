@@ -258,6 +258,7 @@ CALL 09065069294"));
     
     PA2_Serial.begin(9600);
     PA2_stop();
+    PA2_reset();
   }
   
   #define C_STX 0x02
