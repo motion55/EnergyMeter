@@ -108,17 +108,25 @@ time_t DS3231_readAlarmOne(void)
   return makeTime(tm);
 }
 
-tmElements_t DS3231_readAlarmOneElements(void)
+void DS3231_saveAlarmTwo(time_t t)
 {
-  DS3231AlarmOne alarm = Rtc.GetAlarmOne();
+  t *= 60;
+  RtcDateTime Time(t);
+  DS3231AlarmTwo alarm((int)0, Time.Hour(), Time.Minute(), 0);
+  Rtc.SetAlarmTwo(alarm);
+}
+
+time_t DS3231_readAlarmTwo(void)
+{
+  DS3231AlarmTwo alarm = Rtc.GetAlarmTwo();
   tmElements_t tm;
-  tm.Second = alarm.Second();
+  tm.Second = 0;
   tm.Minute = alarm.Minute();
   tm.Hour = alarm.Hour();
   tm.Day = 1;
   tm.Month = 1;
   tm.Year = 0;
-  return tm;
+  time_t t = makeTime(tm)/60;
+  return t;
 }
-
 

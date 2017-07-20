@@ -115,8 +115,10 @@
   float Prev_WattHr = 0.0f;
   
 #if USE_GSM  
+  #ifndef HAVE_HWSERIAL1
   const int RX_pin = 2;
   const int TX_pin = 3;
+  #endif
   const int GSM_ON_pin = A3;
 #endif  
 
@@ -166,6 +168,8 @@
     DS3231_setup();
     time_t t = DS3231_readAlarmOne();
     Credit_WattHr = t;    
+    t = DS3231_readAlarmTwo();
+    Total_WattHr = t;
   #endif    
   
   #if USE_KEYPAD
@@ -358,6 +362,8 @@ CALL 09065069294"));
             #if USE_RTC
               time_t t = Credit_WattHr;
               DS3231_saveAlarmOne(t);
+              t = Total_WattHr;
+              DS3231_saveAlarmTwo(t);
             #endif
             }
             Prev_WattHr = WattHr;
@@ -622,6 +628,8 @@ CALL 09065069294"));
           stringOne.toCharArray(smsbuffer,160);
           sms.SendSMS(phone_book[DEFAULT_NUMBER],smsbuffer);
           Total_WattHr = 0.0f;
+          time_t t = Total_WattHr;
+          DS3231_saveAlarmTwo(t);
           PA2_reset();
         }
       }
