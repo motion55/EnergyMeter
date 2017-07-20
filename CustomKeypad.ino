@@ -89,6 +89,7 @@ boolean CheckPassword(String passwd)
   char done = 0;
   while (!done) {
     char customKey = customKeypad.getKey();
+    if (customKey==0) continue;
     if ((customKey>='0')&&(customKey<='9'))
     {
       guess += customKey;
@@ -100,6 +101,10 @@ boolean CheckPassword(String passwd)
     {
       done = true;
       if (guess == passwd) result = true;
+    }
+    else
+    {
+      done = true;
     }
   }
   return result;
@@ -160,6 +165,7 @@ float GetWattHr(boolean bLoad)
   char done = 0;
   while (!done) {
     char customKey = customKeypad.getKey();
+    if (customKey==0) continue;
     if ((customKey>='0')&&(customKey<='9'))
     {
       sLoad += customKey;
@@ -171,6 +177,10 @@ float GetWattHr(boolean bLoad)
     {
       done = true;
       fLoad = sLoad.toInt();
+    }
+    else
+    {
+      done = true;
     }
   }
   return fLoad;

@@ -5,18 +5,25 @@
   #include "src/sms.h"
   SMSGSM sms;
   boolean started=false;
-  #define DEFAULT_NUMBER  0 // 0 or 1
+  #define DEFAULT_NUMBER  1 // 0 or 1
   #define SMS_TARGET0 "09065069294" //<-use your own number 
   #define SMS_TARGET1 "09297895641"
   #define SMS_TARGET2 "00000000000" //spare
 
-  #define PA2_Serial  Serial
   #define USE_GSM     1
   #define USE_SDCARD  0
   #define USE_RTC     1
   #define USE_SMART   0
   #define USE_KEYPAD  1
   #define USE_REPORT  1
+  
+#if (defined(HAVE_HWSERIAL2)&&USE_GSM)
+  #define PA2_Serial  Serial2
+#elif defined(HAVE_HWSERIAL1) 
+  #define PA2_Serial  Serial1
+#else
+  #define PA2_Serial  Serial
+#endif
 
   #define PesoPerWatt 2.5f
 
@@ -192,16 +199,30 @@
 #if USE_GSM  
     lcd.setCursor(0,3);
     lcd.print(F(" Initializing  GSM. "));
-  #if defined(__AVR_ATmega328P__)
-    gsm.SelectSoftwareSerial(RX_pin, TX_pin, GSM_ON_pin);
-  #else
+  #if defined(HAVE_HWSERIAL1)
     gsm.SelectHardwareSerial(&Serial1, GSM_ON_pin);
+  #else
+    gsm.SelectSoftwareSerial(RX_pin, TX_pin, GSM_ON_pin);
   #endif
     if (gsm.begin(9600))
     {
       started=true;  
       //Send a message to indicate successful connection
-      String hello(F("ADVISORY FROM NERY AND JASA'S THESIS PROJECT GSM MODULE: THIS MESSAGE IS TO INFORM YOU THAT NERY AND JASA'S POWER METER IS NOW WORKING. PLEASE DO NOT REPLY. AUTOMATED TXT ADVISORY FOR INQUIRIES TEXT OR CALL 09065069294"));
+      String hello(\
+F("ADVISORY FROM \
+NERY AND JASA'S \
+THESIS PROJECT \
+GSM MODULE: THIS \
+MESSAGE IS TO \
+INFORM YOU THAT \
+NERY AND JASA'S \
+POWER METER IS \
+NOW WORKING. \
+PLEASE DO NOT \
+REPLY. AUTOMATED \
+TXT ADVISORY FOR \
+INQUIRIES TEXT OR \
+CALL 09065069294"));
       sms.SendSMS(phone_book[DEFAULT_NUMBER], hello.c_str());
       //sms.SendSMS(SMS_TARGET1, hello.c_str());
   #if USE_RTC
@@ -592,9 +613,11 @@
           lcd.print(F("Sending report..."));
           char smsbuffer[160];
           float usage = Total_WattHr * PesoPerWatt;
-          String stringOne = String(F("KW-Hr="))+String(Total_WattHr/1000.0f,5);
-          String stringTwo = String(F(" Pesos="))+String(usage,2);
+          String stringOne = String(DateText)+String(F("\r\n"))+String(TimeText)+String(F("\r\n"));
+          String stringTwo = String(F("KW-Hr="))+String(Total_WattHr/1000.0f,5);
+          String stringThree = String(F(" Pesos="))+String(usage,2);
           stringOne.concat(stringTwo);
+          stringOne.concat(stringThree);
           stringOne.toCharArray(smsbuffer,160);
           sms.SendSMS(phone_book[DEFAULT_NUMBER],smsbuffer);
           Total_WattHr = 0.0f;
