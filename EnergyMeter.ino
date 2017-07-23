@@ -1,4 +1,4 @@
-
+ 
   //
   // include the library code:
   #include "src/SIMCOM.h"
@@ -28,12 +28,17 @@
   #define PesoPerWatt 2.5f
 
 #if USE_REPORT
-  #define REPORT_HOUR 10
-  #define REPORT_MIN  28
-  #define REPORT_SEC  00
+  #include <EEPROM.h>
 
-  char send_report;
-  char report_sent;
+  #define REPORT_HOUR_ADDR 30
+  #define REPORT_MIN_ADDR  31
+  
+  #define REPORT_HOUR 0
+  #define REPORT_MIN  0
+  #define REPORT_SEC  0
+
+  char send_report = 0;
+  char report_sent = 0;
   
   char ReportHours = REPORT_HOUR;
   char ReportMins = REPORT_MIN;
@@ -173,13 +178,30 @@
   #endif    
   
   #if USE_KEYPAD
-  Unlocked = false;
-  String pw_eeprom = Get_EEPROM_password();
-  if (pw_eeprom.length()>0)
-  {
-    password = pw_eeprom;    
-  }
-  Set_EEPROM_password(password);
+    Unlocked = false;
+    String pw_eeprom = Get_EEPROM_password();
+    if (pw_eeprom.length()>0)
+    {
+      password = pw_eeprom;    
+    }
+    Set_EEPROM_password(password);
+  #endif    
+  
+  #if USE_REPORT
+    unsigned char HourVal = EEPROM.read(REPORT_HOUR_ADDR);
+    unsigned char MinVal = EEPROM.read(REPORT_MIN_ADDR);
+    if ((HourVal<24)&&(MinVal<60))
+    {
+      ReportHours = HourVal;
+      ReportMins = MinVal;
+    }
+    else
+    {
+      HourVal = REPORT_HOUR;
+      MinVal = REPORT_MIN;
+      EEPROM.update(REPORT_HOUR_ADDR, HourVal);
+      EEPROM.update(REPORT_MIN_ADDR, MinVal);
+    }
   #endif    
   
   #if USE_SDCARD 
@@ -200,6 +222,7 @@
     }
     delay(1000);
   #endif  
+  
 #if USE_GSM  
     lcd.setCursor(0,3);
     lcd.print(F(" Initializing  GSM. "));
@@ -227,6 +250,9 @@ REPLY. AUTOMATED \
 TXT ADVISORY FOR \
 INQUIRIES TEXT OR \
 CALL 09065069294"));
+      String stringOne(F("\r\n Report Time "));
+      AddReportTime(stringOne);
+      hello.concat(stringOne); 
       sms.SendSMS(phone_book[DEFAULT_NUMBER], hello.c_str());
       //sms.SendSMS(SMS_TARGET1, hello.c_str());
   #if USE_RTC
@@ -360,7 +386,11 @@ CALL 09065069294"));
               Credit_WattHr -= delta;
               Total_WattHr += delta;
             #if USE_RTC
-              time_t t = Credit_WattHr;
+              time_t t = 0;
+              if (Credit_WattHr>0) 
+                t = Credit_WattHr;
+              else
+                Credit_WattHr = 0.0f;
               DS3231_saveAlarmOne(t);
               t = Total_WattHr;
               DS3231_saveAlarmTwo(t);
@@ -545,11 +575,12 @@ CALL 09065069294"));
                   {
                     ReportHours = tempHour;
                     ReportMins = tempMin;
-                    String stringOne = "Daily Report Hour="+String((int)ReportHours);
-                    String stringTwo = " Minute="+String((int)ReportMins);
-                    stringOne.concat(stringTwo);
+                    String stringOne(F("Set Report Time "));
+                    AddReportTime(stringOne);
                     stringOne.toCharArray(smsbuffer,160);
                     sms.SendSMS(phone_n, smsbuffer);
+                    EEPROM.update(REPORT_HOUR_ADDR, ReportHours);
+                    EEPROM.update(REPORT_MIN_ADDR, ReportMins);
                   }
                 }
               }
@@ -664,18 +695,17 @@ CALL 09065069294"));
 
     lcd.clear();
     lcd.setCursor(0,0);
-    lcd.print(F("Total KWH ="));
+    lcd.print(F("Total KWHr ="));
     lcd.print(String(Total_WattHr/1000.0f,5));
 
     lcd.setCursor(0,1);
-    lcd.print(F("Credit KWH="));
+    lcd.print(F("Credit KWHr="));
     lcd.print(Credit_WattHr/1000.0f,5);
     
     lcd.setCursor(0,2);
 #if 0
-    String stringOne = "Hour="+String((int)ReportHours);
-    String stringTwo = " Min="+String((int)ReportMins);
-    stringOne.concat(stringTwo);
+    String stringOne(F("Report Time - "));
+    AddReportTime(stringOne);
     lcd.print(stringOne);
 #endif    
     UpdateTime();
@@ -819,6 +849,24 @@ CALL 09065069294"));
     {
       report_sent = 0;
     }
+  }
+
+  void AddReportTime(String &stringOne)
+  {
+    if (ReportHours<10) 
+    {
+      stringOne.concat('0');
+    }
+    stringOne.concat(String((int)ReportHours));
+    if (ReportMins<10)
+    {
+      stringOne.concat(F(":0"));
+    }
+    else
+    {
+      stringOne.concat(':');
+    }
+    stringOne.concat(String((int)ReportMins));
   }
 
   void PA2_start(void)

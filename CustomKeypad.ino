@@ -186,7 +186,9 @@ float GetWattHr(boolean bLoad)
   return fLoad;
 }
 
+#ifndef PASSWORD_ADDR
 #define PASSWORD_ADDR 0
+#endif
 
 String Get_EEPROM_password(void)
 {
