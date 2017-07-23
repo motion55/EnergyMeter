@@ -82,6 +82,17 @@ void DS3231_setup()
   setTime(t);
 }
 
+void DS3231_setDateTime(uint16_t year, 
+            uint8_t month,
+            uint8_t day,
+            uint8_t hour, 
+            uint8_t minute, 
+            uint8_t second)
+{
+  RtcDateTime Time(year, month, day, hour, minute, second);
+  Rtc.SetDateTime(Time);
+}
+
 void DS3231_setTime(time_t t)
 {
   RtcDateTime Time(t);

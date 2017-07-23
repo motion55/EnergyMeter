@@ -5,7 +5,7 @@
   #include "src/sms.h"
   SMSGSM sms;
   boolean started=false;
-  #define DEFAULT_NUMBER  1 // 0 or 1
+  #define DEFAULT_NUMBER  0 // 0 or 1
   #define SMS_TARGET0 "09065069294" //<-use your own number 
   #define SMS_TARGET1 "09297895641"
   #define SMS_TARGET2 "00000000000" //spare
@@ -113,7 +113,7 @@
   float PH = 0.0f;
   unsigned long Interval = 0;
   const float peso_per_kw = 13.0f;
-  const int RelayPin = 8;
+  const int RelayPin = A0;
   boolean RelayON;
   float Total_WattHr = 0.0f;
   float Credit_WattHr = 0.0f;
@@ -529,17 +529,37 @@ CALL 09065069294"));
         {
           if (CheckPhonebook(String(phone_n)))
           {
-            if(strstr(smsbuffer,"POWER"))
+            if(strstr(smsbuffer,"DATE"))
             {
-              String stringOne = "Preal="+String(Preal,1);
-              stringOne.toCharArray(smsbuffer,160);
-              sms.SendSMS(phone_n, smsbuffer );
+              char *pDateStr = strstr(smsbuffer,"DATE");
+              pDateStr += 4; //move pointer to strring after "DATE"
+              String sMonth(pDateStr);  //07/23
+              if ((sMonth.length()>=5)&&(pDateStr[2]=='/'))
+              {
+                int MonthVal = sMonth.toInt();
+                if ((MonthVal<1)||(MonthVal>12)) MonthVal = month();
+                String sDay(pDateStr+3);
+                int DayVal = sDay.toInt();
+                if ((DayVal<1)||(DayVal>31)) DayVal = day();
+                setTime(hour(),minute(),second(),DayVal,MonthVal,year());
+                DS3231_setDateTime(year(),month(),day(),hour(),minute(),second());
+              }
             }
-            else if(strstr(smsbuffer,"VOLTS"))
+            else if(strstr(smsbuffer,"TIME"))
             {
-              String stringOne = "Vrms="+String(Vrms,1);
-              stringOne.toCharArray(smsbuffer,160);
-              sms.SendSMS(phone_n, smsbuffer );
+              char *pTimeStr = strstr(smsbuffer,"TIME");
+              pTimeStr += 4; //move pointer to strring after "TIME"
+              String sHour(pTimeStr);  //08:31
+              if ((sHour.length()>=5)&&(pTimeStr[2]==':'))
+              {
+                int HourVal = sHour.toInt();
+                if ((HourVal<0)||(HourVal>23)) HourVal = hour();
+                String sMinute(pTimeStr+3);
+                int MinVal = sMinute.toInt();
+                if ((MinVal<0)||(MinVal>59)) MinVal = minute();
+                setTime(HourVal,MinVal,second(),day(),month(),year());
+                DS3231_setDateTime(year(),month(),day(),hour(),minute(),second());
+              }
             }
             else if(strstr(smsbuffer,"BILL"))
             {
@@ -787,7 +807,8 @@ CALL 09065069294"));
     DateText[3] = '0' + dayTens;
     DateText[4] = '0' + dayOnes;
 
-    String yearstr(year(tm));
+    //String yearstr(year(tm));
+    String yearstr(F("2017"));
     DateText[6] = yearstr.charAt(0);
     DateText[7] = yearstr.charAt(1);
     DateText[8] = yearstr.charAt(2);
